@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azamat AI - Voice</title>
+    <link rel="stylesheet" href="css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+</head>
+
+<body class="h-screen flex overflow-hidden">
+    <div id="login-screen" class="fixed inset-0 flex flex-col items-center justify-center p-6">
+        <div class="azamat-logo w-24 h-24 mb-6 shadow-[0_0_50px_rgba(0,255,136,0.3)]"></div>
+        <h1 class="text-4xl font-bold mb-2">AZAMAT AI</h1>
+        <p class="text-gray-400 mb-8">Google немесе Қонақ ретінде кіріңіз</p>
+        <button onclick="loginWithGoogle()"
+            class="flex items-center gap-3 bg-white text-black px-8 py-3 rounded-2xl font-bold hover:bg-gray-200 transition">
+            <img src="https://www.gstatic.com/images/branding/product/1x/gsa_512dp.png" width="20"> Google
+        </button>
+        <div class="flex items-center my-4 w-64">
+            <div class="flex-1 border-t border-gray-700"></div>
+            <span class="px-3 text-xs text-gray-500 uppercase">немесе / или</span>
+            <div class="flex-1 border-t border-gray-700"></div>
+        </div>
+        <button onclick="loginAsGuest()"
+            class="flex items-center gap-3 bg-zinc-800 text-white border border-zinc-700 px-8 py-3 rounded-2xl font-semibold hover:bg-zinc-700 transition shadow-lg">
+            <i class="fas fa-user-circle text-green-400 text-lg"></i>
+            <span>Қонақ ретінде кіру / Войти как гость</span>
+        </button>
+    </div>
+
+    <aside class="w-72 sidebar flex flex-col p-5 hidden md:flex">
+        <div class="flex items-center gap-3 mb-8 px-2">
+            <div class="azamat-logo"></div>
+            <span class="text-lg font-bold">AZAMAT</span>
+        </div>
+        <button onclick="createNewChat()" class="border border-gray-800 rounded-xl py-3 mb-6 hover:bg-white/5 text-sm">
+            <i class="fas fa-plus text-xs accent-green"></i> <span id="btn-new-chat">Жаңа сұхбат</span>
+        </button>
+
+        <div class="mb-6 p-3 bg-zinc-900 rounded-xl">
+            <p class="text-[10px] text-gray-500 mb-3 uppercase">🎙️ Дауыс</p>
+            <label class="flex items-center justify-between mb-2 cursor-pointer">
+                <span class="text-xs">Автоозвучка</span>
+                <input type="checkbox" id="auto-speak" onchange="toggleAutoSpeak()" class="accent-green">
+            </label>
+            <div class="mb-3">
+                <p class="text-[9px] text-gray-500 mb-1">🔊 Громкость</p>
+                <input type="range" id="volume-slider" min="0" max="100" value="50" onchange="setVolume(this.value)"
+                    class="w-full accent-green cursor-pointer">
+                <p class="text-[9px] text-gray-600 text-right"><span id="volume-text">50</span>%</p>
+            </div>
+            <p class="text-[9px] text-gray-600 mt-2">Азамат автоматты түрде жауап береді</p>
+        </div>
+
+        <div class="flex-1 overflow-y-auto" id="chat-sessions-list"></div>
+        <div id="user-profile" class="mt-auto pt-4 border-t border-gray-800 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <img id="user-avatar" class="w-8 h-8 rounded-full">
+                <span id="user-name" class="text-xs truncate"></span>
+            </div>
+            <button onclick="logout()" class="text-gray-500 hover:text-red-400"><i
+                    class="fas fa-sign-out-alt"></i></button>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col">
+        <header class="h-14 flex items-center justify-between px-6 border-b border-gray-900">
+            <div class="flex gap-6 text-sm">
+                <button onclick="switchLang('kk')" id="btn-kk"
+                    class="accent-green border-b-2 border-green-500">ҚАЗ</button>
+                <button onclick="switchLang('ru')" id="btn-ru" class="text-gray-500">РУС</button>
+            </div>
+            <div class="border-l border-gray-700 pl-6 ml-6 flex gap-4">
+                <button onclick="switchMode('chat')" id="btn-mode-chat" class="text-xs accent-green">💬 Чат</button>
+                <button onclick="switchMode('document')" id="btn-mode-doc" class="text-xs text-gray-500">📄
+                    Документ</button>
+            </div>
+            <div class="flex gap-2">
+                <input id="key-input" type="password" placeholder="API Key"
+                    class="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1 text-xs w-48" />
+                <button onclick="saveApiKey()" class="bg-green-500 text-black text-xs px-3 rounded-lg">OK</button>
+            </div>
+        </header>
+
+        <section id="chat-window" class="flex-1 overflow-y-auto p-8 flex flex-col items-center">
+            <div id="welcome-screen" class="my-auto text-center">
+                <div id="main-logo" class="azamat-logo w-16 h-16 mx-auto mb-4"></div>
+                <h1 id="main-title" class="text-3xl font-bold mb-2">Қалай көмектесе аламын?</h1>
+                <p class="text-gray-500 text-sm">Микрофон батырмасын басып сұрақ қойыңыз</p>
+            </div>
+            <div id="messages-container" class="w-full max-w-3xl space-y-6 hidden"></div>
+        </section>
+
+        <footer class="p-6">
+            <div class="max-w-3xl mx-auto relative">
+                <div id="tools-popup"
+                    class="absolute bottom-16 left-0 bg-zinc-900 border border-zinc-800 rounded-2xl p-3 w-80 shadow-2xl">
+                    <p class="text-[10px] text-gray-500 mb-3 uppercase tracking-wider">🛠️ Құралдар мен медиа</p>
+                    <div class="mb-3">
+                        <p class="text-[9px] text-gray-600 mb-2 uppercase">Медиа жүктеу</p>
+                        <div class="space-y-1">
+                            <div onclick="triggerImageUpload()"
+                                class="tool-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer">
+                                <i class="fas fa-image text-purple-400"></i>
+                                <div class="flex-1">
+                                    <div class="text-xs font-medium">Сурет / Изображение</div>
+                                    <div class="text-[9px] text-gray-500">PNG, JPG, WebP</div>
+                                </div>
+                            </div>
+                            <div class="tool-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer">
+                                <i class="fas fa-file-pdf text-red-400"></i>
+                                <div class="flex-1">
+                                    <div class="text-xs font-medium">PDF құжат</div>
+                                    <div class="text-[9px] text-gray-500">Текст, таблицы</div>
+                                </div>
+                            </div>
+                            <div class="tool-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer">
+                                <i class="fas fa-file-word text-blue-400"></i>
+                                <div class="flex-1">
+                                    <div class="text-xs font-medium">Документ</div>
+                                    <div class="text-[9px] text-gray-500">DOCX, TXT</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="border-t border-gray-800 my-2"></div>
+                    <div>
+                        <p class="text-[9px] text-gray-600 mb-2 uppercase">AI Құралдар</p>
+                        <div class="space-y-1">
+                            <div class="tool-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer">
+                                <i class="fas fa-palette text-orange-400"></i>
+                                <div class="flex-1">
+                                    <div class="text-xs font-medium">Сурет генерация</div>
+                                    <div class="text-[9px] text-gray-500">DALL-E, Midjourney</div>
+                                </div>
+                            </div>
+                            <div class="tool-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer">
+                                <i class="fas fa-search text-blue-400"></i>
+                                <div class="flex-1">
+                                    <div class="text-xs font-medium">Deep Research</div>
+                                    <div class="text-[9px] text-gray-500">Терең зерттеу</div>
+                                </div>
+                            </div>
+                            <div class="tool-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer">
+                                <i class="fas fa-brain text-pink-400"></i>
+                                <div class="flex-1">
+                                    <div class="text-xs font-medium">Deep Thinking</div>
+                                    <div class="text-[9px] text-gray-500">Кеңейтілген ойлау</div>
+                                </div>
+                            </div>
+                            <div class="tool-item flex items-center gap-3 px-3 py-2 rounded-lg cursor-pointer">
+                                <i class="fas fa-code text-green-400"></i>
+                                <div class="flex-1">
+                                    <div class="text-xs font-medium">Code Mode</div>
+                                    <div class="text-[9px] text-gray-500">Программалау</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview uploaded image before sending -->
+                <div id="image-preview-container" class="hidden mb-2">
+                    <div
+                        class="inline-flex items-center gap-3 bg-zinc-900 border border-zinc-700 px-3 py-2 rounded-xl relative shadow-lg">
+                        <img id="image-preview" src="" alt="Сурет"
+                            class="w-12 h-12 rounded-lg object-cover border border-zinc-700">
+                        <div class="text-xs pr-4">
+                            <p id="image-preview-name" class="font-medium text-white truncate max-w-[200px]">Сурет
+                                таңдалды</p>
+                            <p class="text-[10px] text-green-400 flex items-center gap-1"><i
+                                    class="fas fa-check-circle"></i> Сұрақпен бірге жіберіледі</p>
+                        </div>
+                        <button onclick="clearSelectedImage()"
+                            class="absolute -top-2 -right-2 bg-red-600 hover:bg-red-700 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs shadow-md transition">
+                            &times;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hidden File Input for images -->
+                <input type="file" id="image-file-input" accept="image/*" class="hidden"
+                    onchange="handleImageSelect(event)">
+
+                <div class="flex gap-2">
+                    <button onclick="toggleToolsPopup()" id="attach-btn" title="Құралдар"
+                        class="bg-zinc-800 border border-zinc-700 w-12 h-12 rounded-xl hover:bg-zinc-700 transition">
+                        <i class="fas fa-paperclip text-gray-400"></i>
+                    </button>
+                    <button onclick="triggerImageUpload()" id="image-btn" title="Сурет жүктеу (есеп, қате, код)"
+                        class="bg-zinc-800 border border-zinc-700 w-12 h-12 rounded-xl hover:bg-zinc-700 transition text-purple-400">
+                        <i class="fas fa-image"></i>
+                    </button>
+                    <button onclick="startVoiceInput()" id="voice-btn"
+                        class="bg-zinc-800 border border-zinc-700 w-12 h-12 rounded-xl hover:bg-zinc-700 transition">
+                        <i class="fas fa-microphone text-green-400"></i>
+                    </button>
+                    <div class="flex-1 relative">
+                        <input type="text" id="user-input" placeholder="Сұрақ жазыңыз немесе сурет жіберіңіз..."
+                            class="w-full input-field rounded-2xl py-4 px-6 pr-14">
+                        <button onclick="handleSend()"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 bg-green-500 text-black w-10 h-10 rounded-xl">
+                            <i class="fas fa-arrow-up"></i>
+                        </button>
+                    </div>
+                    <button onclick="speakLast()"
+                        class="bg-zinc-800 border border-zinc-700 w-12 h-12 rounded-xl hover:bg-zinc-700 transition">
+                        <i class="fas fa-volume-up text-gray-400"></i>
+                    </button>
+                </div>
+            </div>
+        </footer>
+    </main>
+
+    <!-- Lightbox Modal for Fullscreen Image View -->
+    <div id="image-modal"
+        class="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 cursor-pointer"
+        onclick="closeImageModal()">
+        <div class="relative max-w-4xl max-h-[90vh]" onclick="event.stopPropagation()">
+            <img id="modal-image" src=""
+                class="max-w-full max-h-[85vh] rounded-2xl shadow-2xl object-contain border border-zinc-700">
+            <button onclick="closeImageModal()"
+                class="absolute -top-3 -right-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-full w-9 h-9 flex items-center justify-center shadow-lg border border-zinc-600 transition">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <script src="js/main.js"></script>
+</body>
+
+</html>

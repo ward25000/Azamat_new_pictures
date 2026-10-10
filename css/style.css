@@ -1,0 +1,45 @@
+body { background-color: #0a0a0a; color: #e0e0e0; font-family: 'Inter', sans-serif; }
+.sidebar { background-color: #121212; border-right: 1px solid #1f2937; }
+.accent-green { color: #00ff88; }
+.azamat-logo {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, #00ff88 0%, #008f50 100%);
+    clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+    display: inline-block;
+}
+.input-field { background-color: #1a1a1a; border: 1px solid #333; color: white; }
+.chat-item { transition: all 0.2s; border-left: 3px solid transparent; }
+.chat-item.active { background: rgba(0, 255, 136, 0.1); border-left-color: #00ff88; }
+.chat-msg { animation: fadeIn 0.3s; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+#login-screen { z-index: 1000; background: radial-gradient(circle, #1a1a1a 0%, #0a0a0a 100%); }
+.listening { animation: pulse 1.5s infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; transform: scale(1.05); } }
+.speaking { animation: speak 0.5s infinite; }
+@keyframes speak { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+@keyframes fadeInOut {
+    0% { opacity: 0; transform: translate(-50%, -20px); }
+    15% { opacity: 1; transform: translate(-50%, 0); }
+    85% { opacity: 1; transform: translate(-50%, 0); }
+    100% { opacity: 0; transform: translate(-50%, -20px); }
+}
+#tools-popup {
+    transform: translateY(10px);
+    opacity: 0;
+    pointer-events: none;
+    transition: all 0.2s;
+}
+
+#tools-popup.show {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+}
+.tool-item { transition: all 0.15s; }
+.tool-item:hover { background: rgba(0, 255, 136, 0.1); transform: translateX(2px); }
+.code-block-wrapper { margin: 12px 0; }
+.code-header { font-size: 11px; user-select: none; }
+.copy-btn { transition: all 0.2s; cursor: pointer; border: none; }
+.copy-btn:hover { transform: scale(1.05); }
+pre { margin: 0; overflow-x: auto; }
+code { font-family: 'Courier New', 'Consolas', monospace; line-height: 1.5; }
