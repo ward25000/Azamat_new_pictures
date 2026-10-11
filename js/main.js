@@ -11,16 +11,28 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 const BACKEND_URL = 'http://127.0.0.1:8000/api';
+const LOCAL_TTS_URL = 'http://127.0.0.1:8765/api/tts';
 const FALLBACK_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
 
-let sessions = JSON.parse(localStorage.getItem('azamat_sessions')) || [];
+function readStoredSessions() {
+    try {
+        const stored = JSON.parse(localStorage.getItem('azamat_sessions') || '[]');
+        return Array.isArray(stored) ? stored : [];
+    } catch (error) {
+        console.error('Не удалось загрузить локальную историю:', error);
+        return [];
+    }
+}
+
+let sessions = readStoredSessions();
 let currentSessionId = null;
 let currentLang = 'kk';
-let API_KEY = localStorage.getItem('azamat_google_api_key') || ''; // Google Gemini API ключ
+let API_KEY = (localStorage.getItem('azamat_google_api_key') || '').trim(); // Google Gemini API ключ
+let ELEVENLABS_KEY = (localStorage.getItem('azamat_elevenlabs_api_key') || '').trim();
 let accessToken = null;
 let isLoading = false;
 let isAuthProcessing = false;
-let autoSpeak = localStorage.getItem('azamat_autospeak') === 'true';
+const DEFAULT_VOLUME = 0.3;
 let currentMode = localStorage.getItem('azamat_mode') || 'chat';
 let isGuest = localStorage.getItem('azamat_is_guest') === 'true';
 let selectedImage = null; // base64 Data URL сурет үшін
@@ -214,7 +226,7 @@ function loginAsGuest() {
 }
 
 function loadFromLocal() {
-    sessions = JSON.parse(localStorage.getItem('azamat_sessions')) || [];
+    sessions = readStoredSessions();
     renderSidebar();
     if (sessions.length > 0 && !currentSessionId) {
         loadSession(sessions[0].id);
@@ -472,6 +484,7 @@ async function handleSend() {
 
     appendMsg('user', text, currentImg);
     s.history.push({ role: 'user', content: text, image: currentImg || null });
+    localStorage.setItem('azamat_sessions', JSON.stringify(sessions));
     input.value = '';
     clearSelectedImage();
     isLoading = true;
@@ -536,20 +549,34 @@ async function handleSend() {
 
         for (const modelName of FALLBACK_MODELS) {
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
                 const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-goog-api-key': API_KEY
                     },
-                    body: JSON.stringify({ contents })
+                    body: JSON.stringify({ contents }),
+                    signal: controller.signal
                 });
+                clearTimeout(timeoutId);
+                let d;
+                try {
+                    d = await r.json();
+                } catch (parseError) {
+                    throw new Error('Сервис вернул некорректный ответ');
+                }
 
-                const d = await r.json();
-
-                if (d.error) {
-                    const msg = d.error.message || '';
-                    if (d.error.code === 429 || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('rate') || d.error.code === 404) {
+                if (!r.ok || d.error) {
+                    const apiError = d.error || {};
+                    const msg = apiError.message || `HTTP ${r.status}`;
+                    if (r.status === 400 || r.status === 401 || r.status === 403) {
+                        throw new Error(currentLang === 'kk'
+                            ? 'Google Gemini API кілті жарамсыз немесе өшірілген. Кілтті тексеріп, қайта сақтаңыз.'
+                            : 'Ключ Google Gemini API недействителен или отключён. Проверьте ключ и сохраните его заново.');
+                    }
+                    if (apiError.code === 429 || msg.toLowerCase().includes('quota') || msg.toLowerCase().includes('rate') || apiError.code === 404) {
                         console.warn(`Модель ${modelName} вернула лимит (429/quota), пробуем следующую модель...`);
                         lastError = msg;
                         continue;
@@ -562,7 +589,9 @@ async function handleSend() {
                     break;
                 }
             } catch (err) {
-                lastError = err.message;
+                lastError = err.name === 'AbortError'
+                    ? (currentLang === 'kk' ? 'Сервер жауабы тым ұзақ күтті.' : 'Сервер слишком долго не отвечает.')
+                    : (err.message || 'Ошибка соединения с сервисом Gemini');
             }
         }
 
@@ -582,7 +611,9 @@ async function handleSend() {
     } catch (e) {
         console.error(e);
         removeThinking(tid);
-        let displayError = e.message;
+        let displayError = e.message || (currentLang === 'kk'
+            ? 'Жауап алу кезінде қате орын алды.'
+            : 'При получении ответа произошла ошибка.');
         const retryMatch = displayError.match(/retry in ([\d\.]+)s/i);
         if (retryMatch) {
             const secs = Math.ceil(parseFloat(retryMatch[1]));
@@ -591,8 +622,9 @@ async function handleSend() {
                 : `⏳ Слишком много запросов за короткое время. Пожалуйста, подождите ${secs} сек. и отправьте снова.`;
         }
         appendMsg('ai', `❌ Ошибка: ${displayError}`);
+    } finally {
+        isLoading = false;
     }
-    isLoading = false;
 }
 
 async function saveToDatabase(title, userText, aiText) {
@@ -657,7 +689,6 @@ function appendMsg(role, text, image = null) {
 
     if (role === 'assistant' || role === 'ai') {
         lastMessage = text;
-        if (autoSpeak) setTimeout(() => speakLast(), 500);
         setTimeout(() => {
             if (window.MathJax) MathJax.typesetPromise([d]);
         }, 100);
@@ -742,7 +773,14 @@ function copyCode(elementId, event) {
 }
 
 function removeThinking(id) { document.getElementById(id)?.remove(); }
-function loginWithGoogle() { auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()); }
+function loginWithGoogle() {
+    auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(error => {
+        console.error('Ошибка входа через Google:', error);
+        alert(currentLang === 'kk'
+            ? 'Google арқылы кіру мүмкін болмады. Қонақ режимін пайдаланыңыз.'
+            : 'Не удалось войти через Google. Используйте гостевой режим.');
+    });
+}
 function logout() {
     localStorage.removeItem('azamat_is_guest');
     const savedApiKey = localStorage.getItem('azamat_google_api_key');
@@ -751,8 +789,50 @@ function logout() {
     if (savedApiKey) localStorage.setItem('azamat_google_api_key', savedApiKey);
     location.reload();
 }
-function saveApiKey() { API_KEY = document.getElementById('key-input').value.trim(); localStorage.setItem('azamat_google_api_key', API_KEY); alert('✅ Google API ключ сохранён!'); }
+function saveApiKey() {
+    const keyInput = document.getElementById('key-input');
+    API_KEY = keyInput.value.trim();
+    if (!API_KEY) {
+        localStorage.removeItem('azamat_google_api_key');
+        alert(currentLang === 'kk' ? 'API кілті бос болмауы керек.' : 'API-ключ не может быть пустым.');
+        return;
+    }
+    localStorage.setItem('azamat_google_api_key', API_KEY);
+    alert(currentLang === 'kk' ? '✅ Google API кілті сақталды!' : '✅ Ключ Google API сохранён!');
+}
+function saveApiKeys() {
+    const googleInput = document.getElementById('key-input');
+    const elevenLabsInput = document.getElementById('elevenlabs-key-input');
+    const googleKey = googleInput.value.trim();
+    const elevenLabsKey = elevenLabsInput.value.trim();
+
+    if (!googleKey || !elevenLabsKey) {
+        alert(currentLang === 'kk'
+            ? 'Gemini және ElevenLabs кілттерін енгізіңіз.'
+            : 'Введите ключи Gemini и ElevenLabs.');
+        return;
+    }
+
+    API_KEY = googleKey;
+    ELEVENLABS_KEY = elevenLabsKey;
+    localStorage.setItem('azamat_google_api_key', API_KEY);
+    localStorage.setItem('azamat_elevenlabs_api_key', ELEVENLABS_KEY);
+    document.getElementById('api-keys-panel')?.classList.add('saved');
+}
+function showApiKeysPanel() {
+    const panel = document.getElementById('api-keys-panel');
+    if (!panel) return;
+    panel.classList.remove('saved');
+    document.getElementById('elevenlabs-key-input')?.focus();
+}
 function toggleToolsPopup() { document.getElementById('tools-popup').classList.toggle('show'); }
+function toggleSidebar() {
+    document.body.classList.toggle('sidebar-collapsed');
+    localStorage.setItem(
+        'azamat_sidebar_collapsed',
+        document.body.classList.contains('sidebar-collapsed') ? 'true' : 'false'
+    );
+}
 
 document.getElementById('user-input').addEventListener('keypress', e => { if (e.key === 'Enter') handleSend(); });
 
@@ -827,45 +907,129 @@ function startVoiceInput() {
     recognition.start();
 }
 
-const ELEVENLABS_KEY = 'sk_a69bf5a6312aafc0a4f631cb923c5fa0fc42cd880ec346a0';
 const VOICE_ID = 'RdU9RJ3y0e8FAFYSj3EA';
+let availableVoiceId = localStorage.getItem('azamat_elevenlabs_voice_id') || VOICE_ID;
 let currentAudio = null;
+
+async function playAudioResponse(response) {
+    const audioBlob = await response.blob();
+    const audioUrl = URL.createObjectURL(audioBlob);
+    currentAudio = new Audio(audioUrl);
+    currentAudio.volume = DEFAULT_VOLUME;
+    currentAudio.onended = () => {
+        document.getElementById('main-logo')?.classList.remove('speaking');
+        URL.revokeObjectURL(audioUrl);
+    };
+    await currentAudio.play();
+}
+
+async function speakWithEdgeTts(text) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
+    try {
+        const response = await fetch(LOCAL_TTS_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, language: currentLang }),
+            signal: controller.signal
+        });
+        if (!response.ok) {
+            throw new Error(`Edge TTS server returned ${response.status}`);
+        }
+        await playAudioResponse(response);
+        return true;
+    } finally {
+        clearTimeout(timeoutId);
+    }
+}
 
 async function speakLast() {
     if (!lastMessage) return;
     if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    document.getElementById('main-logo')?.classList.add('speaking');
+
     try {
-        document.getElementById('main-logo')?.classList.add('speaking');
-        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
-            method: 'POST',
-            headers: { 'Accept': 'audio/mpeg', 'Content-Type': 'application/json', 'xi-api-key': ELEVENLABS_KEY },
-            body: JSON.stringify({
-                text: lastMessage,
-                model_id: 'eleven_multilingual_v2',
-                language_code: 'tr',
-                voice_settings: { stability: 0.6, similarity_boost: 0.8 }
-            })
-        });
-        if (!response.ok) { console.error('ElevenLabs ошибка:', response.status); return; }
-        const audioBlob = await response.blob();
-        const audioUrl = URL.createObjectURL(audioBlob);
-        currentAudio = new Audio(audioUrl);
-        currentAudio.onended = () => {
-            document.getElementById('main-logo')?.classList.remove('speaking');
-            URL.revokeObjectURL(audioUrl);
-        };
-        await currentAudio.play();
+        if (!ELEVENLABS_KEY) {
+            throw new Error('ElevenLabs key is not configured');
+        }
+        let response = await requestElevenLabsAudio(availableVoiceId);
+        if (response.status === 404) {
+            const fallbackVoiceId = await findAvailableVoiceId();
+            if (fallbackVoiceId && fallbackVoiceId !== availableVoiceId) {
+                availableVoiceId = fallbackVoiceId;
+                localStorage.setItem('azamat_elevenlabs_voice_id', availableVoiceId);
+                response = await requestElevenLabsAudio(availableVoiceId);
+            }
+        }
+        if (!response.ok) {
+            console.error('ElevenLabs ошибка:', response.status);
+            let errorDetails = '';
+            try {
+                const errorBody = await response.json();
+                errorDetails = errorBody.detail?.message || errorBody.detail?.status || '';
+            } catch (parseError) {
+                console.warn('Не удалось прочитать ответ ElevenLabs:', parseError);
+            }
+            if (response.status === 401) {
+                showApiKeysPanel();
+                alert(currentLang === 'kk'
+                    ? `ElevenLabs авторизация қатесі: ${errorDetails || 'кілт қабылданбады'}. Кілтті қайта енгізіңіз.`
+                    : `ElevenLabs не принял ключ: ${errorDetails || 'ключ отклонён'}. Проверьте ключ и разрешения.`);
+            } else {
+                alert(currentLang === 'kk'
+                    ? `ElevenLabs қатесі (${response.status}): ${errorDetails || 'сервис жауап бермеді'}`
+                    : `Ошибка ElevenLabs (${response.status}): ${errorDetails || 'сервис не принял запрос'}`);
+            }
+            throw new Error(`ElevenLabs returned ${response.status}`);
+        }
+        await playAudioResponse(response);
     } catch (error) {
-        console.error('Ошибка озвучки:', error);
+        console.warn('ElevenLabs недоступен, пробую Edge TTS:', error);
+        try {
+            await speakWithEdgeTts(lastMessage);
+        } catch (edgeError) {
+            console.error('Ошибка озвучки ElevenLabs и Edge TTS:', edgeError);
+            alert(currentLang === 'kk'
+                ? 'ElevenLabs және қосалқы дауыс сервисіне қосылу мүмкін болмады.'
+                : 'Не удалось подключиться к ElevenLabs и резервному сервису озвучки.');
+        }
+
+        async function requestElevenLabsAudio(voiceId) {
+            return fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'audio/mpeg',
+                    'Content-Type': 'application/json',
+                    'xi-api-key': ELEVENLABS_KEY
+                },
+                body: JSON.stringify({
+                    text: lastMessage,
+                    model_id: 'eleven_multilingual_v2',
+                    voice_settings: { stability: 0.6, similarity_boost: 0.8 }
+                })
+            });
+        }
+
+        async function findAvailableVoiceId() {
+            try {
+                const response = await fetch('https://api.elevenlabs.io/v1/voices', {
+                    headers: { 'Accept': 'application/json', 'xi-api-key': ELEVENLABS_KEY }
+                });
+                if (!response.ok) return '';
+                const data = await response.json();
+                const voices = Array.isArray(data.voices) ? data.voices : [];
+                const preferred = voices.find(voice => /adam|antoni|josh/i.test(voice.name || ''));
+                return (preferred || voices[0])?.voice_id || '';
+            } catch (error) {
+                console.warn('Не удалось получить доступные голоса ElevenLabs:', error);
+                return '';
+            }
+        }
+    } finally {
         document.getElementById('main-logo')?.classList.remove('speaking');
     }
 }
 
-function toggleAutoSpeak() { autoSpeak = !autoSpeak; localStorage.setItem('azamat_autospeak', autoSpeak); }
-function setVolume(value) {
-    document.getElementById('volume-text').innerText = value;
-    if (currentAudio) currentAudio.volume = value / 100;
-}
 
 // ===== WEATHER =====
 const CITY_COORDS = {
@@ -935,6 +1099,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const keyInput = document.getElementById('key-input');
     if (keyInput && API_KEY) {
         keyInput.value = API_KEY;
+    }
+    const elevenLabsInput = document.getElementById('elevenlabs-key-input');
+    if (elevenLabsInput && ELEVENLABS_KEY) {
+        elevenLabsInput.value = ELEVENLABS_KEY;
+    }
+    if (API_KEY && ELEVENLABS_KEY) {
+        document.getElementById('api-keys-panel')?.classList.add('saved');
+    }
+    if (localStorage.getItem('azamat_sidebar_collapsed') === 'true') {
+        document.body.classList.add('sidebar-collapsed');
     }
     if (localStorage.getItem('azamat_is_guest') === 'true') {
         initGuestMode();

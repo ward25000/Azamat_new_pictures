@@ -15,7 +15,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
 </head>
 
-<body class="h-screen flex overflow-hidden">
+<body class="h-screen flex overflow-hidden azamat-app">
     <div id="login-screen" class="fixed inset-0 flex flex-col items-center justify-center p-6">
         <div class="azamat-logo w-24 h-24 mb-6 shadow-[0_0_50px_rgba(0,255,136,0.3)]"></div>
         <h1 class="text-4xl font-bold mb-2">AZAMAT AI</h1>
@@ -36,31 +36,16 @@
         </button>
     </div>
 
-    <aside class="w-72 sidebar flex flex-col p-5 hidden md:flex">
-        <div class="flex items-center gap-3 mb-8 px-2">
+    <aside class="w-72 sidebar flex flex-col p-5 hidden md:flex azamat-sidebar">
+        <div class="flex items-center gap-3 mb-8 px-2 azamat-brand">
             <div class="azamat-logo"></div>
             <span class="text-lg font-bold">AZAMAT</span>
         </div>
-        <button onclick="createNewChat()" class="border border-gray-800 rounded-xl py-3 mb-6 hover:bg-white/5 text-sm">
+        <button onclick="createNewChat()" title="Новый чат" aria-label="Новый чат" class="border border-gray-800 rounded-xl py-3 mb-6 hover:bg-white/5 text-sm azamat-new-chat">
             <i class="fas fa-plus text-xs accent-green"></i> <span id="btn-new-chat">Жаңа сұхбат</span>
         </button>
 
-        <div class="mb-6 p-3 bg-zinc-900 rounded-xl">
-            <p class="text-[10px] text-gray-500 mb-3 uppercase">🎙️ Дауыс</p>
-            <label class="flex items-center justify-between mb-2 cursor-pointer">
-                <span class="text-xs">Автоозвучка</span>
-                <input type="checkbox" id="auto-speak" onchange="toggleAutoSpeak()" class="accent-green">
-            </label>
-            <div class="mb-3">
-                <p class="text-[9px] text-gray-500 mb-1">🔊 Громкость</p>
-                <input type="range" id="volume-slider" min="0" max="100" value="50" onchange="setVolume(this.value)"
-                    class="w-full accent-green cursor-pointer">
-                <p class="text-[9px] text-gray-600 text-right"><span id="volume-text">50</span>%</p>
-            </div>
-            <p class="text-[9px] text-gray-600 mt-2">Азамат автоматты түрде жауап береді</p>
-        </div>
-
-        <div class="flex-1 overflow-y-auto" id="chat-sessions-list"></div>
+        <div class="flex-1 overflow-y-auto azamat-history" id="chat-sessions-list"></div>
         <div id="user-profile" class="mt-auto pt-4 border-t border-gray-800 flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <img id="user-avatar" class="w-8 h-8 rounded-full">
@@ -71,36 +56,60 @@
         </div>
     </aside>
 
-    <main class="flex-1 flex flex-col">
-        <header class="h-14 flex items-center justify-between px-6 border-b border-gray-900">
+    <main class="flex-1 flex flex-col azamat-main">
+        <header class="h-14 flex items-center justify-between px-6 border-b border-gray-900 azamat-header">
+            <button onclick="toggleSidebar()" title="Скрыть или показать историю чатов" aria-label="Скрыть или показать историю чатов"
+                class="azamat-sidebar-toggle">
+                <i class="fas fa-bars"></i>
+            </button>
             <div class="flex gap-6 text-sm">
                 <button onclick="switchLang('kk')" id="btn-kk"
                     class="accent-green border-b-2 border-green-500">ҚАЗ</button>
                 <button onclick="switchLang('ru')" id="btn-ru" class="text-gray-500">РУС</button>
             </div>
-            <div class="border-l border-gray-700 pl-6 ml-6 flex gap-4">
+            <div class="border-l border-gray-700 pl-6 ml-6 flex gap-4 azamat-mode-switch">
                 <button onclick="switchMode('chat')" id="btn-mode-chat" class="text-xs accent-green">💬 Чат</button>
                 <button onclick="switchMode('document')" id="btn-mode-doc" class="text-xs text-gray-500">📄
                     Документ</button>
             </div>
-            <div class="flex gap-2">
-                <input id="key-input" type="password" placeholder="API Key"
-                    class="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1 text-xs w-48" />
-                <button onclick="saveApiKey()" class="bg-green-500 text-black text-xs px-3 rounded-lg">OK</button>
+            <div id="api-keys-panel" class="azamat-api-key">
+                <input id="key-input" type="password" placeholder="Gemini API Key"
+                    class="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1 text-xs" />
+                <input id="elevenlabs-key-input" type="password" placeholder="ElevenLabs Key"
+                    class="bg-zinc-900 border border-zinc-800 rounded-lg px-3 py-1 text-xs" />
+                <button onclick="saveApiKeys()" class="bg-green-500 text-black text-xs px-3 rounded-lg">OK</button>
             </div>
         </header>
 
-        <section id="chat-window" class="flex-1 overflow-y-auto p-8 flex flex-col items-center">
-            <div id="welcome-screen" class="my-auto text-center">
+        <section id="chat-window" class="flex-1 overflow-y-auto p-8 flex flex-col items-center azamat-chat-window">
+            <div id="welcome-screen" class="my-auto text-center azamat-welcome">
                 <div id="main-logo" class="azamat-logo w-16 h-16 mx-auto mb-4"></div>
                 <h1 id="main-title" class="text-3xl font-bold mb-2">Қалай көмектесе аламын?</h1>
                 <p class="text-gray-500 text-sm">Микрофон батырмасын басып сұрақ қойыңыз</p>
+                <div class="azamat-suggestions" aria-label="Примеры запросов">
+                    <button type="button" onclick="document.getElementById('user-input').value='Маған осы тақырыпты қарапайым тілмен түсіндіріңіз'; document.getElementById('user-input').focus();">
+                        <i class="fas fa-lightbulb"></i>
+                        <span>Тақырыпты түсіндіріңіз</span>
+                    </button>
+                    <button type="button" onclick="document.getElementById('user-input').value='Осы суретті талдап беріңіз'; document.getElementById('user-input').focus();">
+                        <i class="fas fa-image"></i>
+                        <span>Суретті талдау</span>
+                    </button>
+                    <button type="button" onclick="document.getElementById('user-input').value='Математикалық есепті шешіп беріңіз'; document.getElementById('user-input').focus();">
+                        <i class="fas fa-calculator"></i>
+                        <span>Есепті шешу</span>
+                    </button>
+                    <button type="button" onclick="document.getElementById('user-input').value='Маған құрылымды құжат дайындауға көмектесіңіз'; document.getElementById('user-input').focus();">
+                        <i class="fas fa-file-lines"></i>
+                        <span>Құжат дайындау</span>
+                    </button>
+                </div>
             </div>
             <div id="messages-container" class="w-full max-w-3xl space-y-6 hidden"></div>
         </section>
 
-        <footer class="p-6">
-            <div class="max-w-3xl mx-auto relative">
+        <footer class="p-6 azamat-composer-area">
+            <div class="max-w-3xl mx-auto relative azamat-composer-wrap">
                 <div id="tools-popup"
                     class="absolute bottom-16 left-0 bg-zinc-900 border border-zinc-800 rounded-2xl p-3 w-80 shadow-2xl">
                     <p class="text-[10px] text-gray-500 mb-3 uppercase tracking-wider">🛠️ Құралдар мен медиа</p>
@@ -190,7 +199,7 @@
                 <input type="file" id="image-file-input" accept="image/*" class="hidden"
                     onchange="handleImageSelect(event)">
 
-                <div class="flex gap-2">
+                <div class="flex gap-2 azamat-composer">
                     <button onclick="toggleToolsPopup()" id="attach-btn" title="Құралдар"
                         class="bg-zinc-800 border border-zinc-700 w-12 h-12 rounded-xl hover:bg-zinc-700 transition">
                         <i class="fas fa-paperclip text-gray-400"></i>
@@ -204,8 +213,8 @@
                         <i class="fas fa-microphone text-green-400"></i>
                     </button>
                     <div class="flex-1 relative">
-                        <input type="text" id="user-input" placeholder="Сұрақ жазыңыз немесе сурет жіберіңіз..."
-                            class="w-full input-field rounded-2xl py-4 px-6 pr-14">
+                        <textarea id="user-input" rows="1" placeholder="Сұрақ жазыңыз немесе сурет жіберіңіз..."
+                            class="w-full input-field rounded-2xl py-4 px-6 pr-14"></textarea>
                         <button onclick="handleSend()"
                             class="absolute right-3 top-1/2 -translate-y-1/2 bg-green-500 text-black w-10 h-10 rounded-xl">
                             <i class="fas fa-arrow-up"></i>
