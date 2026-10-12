@@ -1,16 +1,16 @@
 const firebaseConfig = {
-    apiKey: "AIzaSyBbPEipktva-kRios1HOMNL1tHvxwV1ddY",
-    authDomain: "azamat-ai.firebaseapp.com",
-    projectId: "azamat-ai",
-    storageBucket: "azamat-ai.firebasestorage.app",
-    messagingSenderId: "814715297215",
-    appId: "1:814715297215:web:c114662c792218f576550a"
+    apiKey: "AIzaSyDF2-I1PtvHF5jjjYi_ad4ZiBOY2ALklZQ",
+    authDomain: "hackathon-app-bdd9f.firebaseapp.com",
+    projectId: "hackathon-app-bdd9f",
+    storageBucket: "hackathon-app-bdd9f.firebasestorage.app",
+    messagingSenderId: "2417665603",
+    appId: "1:2417665603:web:5b8226605d7e181afc96f6",
+    measurementId: "G-MMVXC7C3XG"
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-const BACKEND_URL = 'http://127.0.0.1:8000/api';
 const FALLBACK_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
 
 function readStoredSessions() {
@@ -179,22 +179,11 @@ auth.onAuthStateChanged(async (u) => {
         document.getElementById('user-avatar').src = u.photoURL;
 
         try {
-            const idToken = await u.getIdToken();
-            const res = await fetch(`${BACKEND_URL}/auth/google/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ access_token: idToken, google_id: u.uid, email: u.email })
-            });
-            if (res.ok) {
-                const responseData = await res.json();
-                accessToken = responseData.access_token || responseData.token;
-                await syncChatsWithDB();
-            } else {
-                loadFromLocal();
-            }
+            await syncChatsWithDB();
         } catch (err) {
-            console.error("Backend недоступен, используем localStorage:", err);
-            loadFromLocal();
+            console.error("Не удалось загрузить историю из Firestore:", err);
+            sessions = [];
+            renderSidebar();
         } finally {
             isAuthProcessing = false;
         }
@@ -252,11 +241,15 @@ async function syncChatsWithDB() {
             renderSidebar();
             if (!currentSessionId) loadSession(sessions[0].id);
         } else {
-            loadFromLocal();
+            sessions = [];
+            currentSessionId = null;
+            renderSidebar();
         }
     } catch (e) {
         console.error("Sync error:", e);
-        loadFromLocal();
+        sessions = [];
+        currentSessionId = null;
+        renderSidebar();
     }
 }
 
@@ -603,7 +596,7 @@ async function handleSend() {
         s.history.push({ role: 'assistant', content: aiReply });
         localStorage.setItem('azamat_sessions', JSON.stringify(sessions));
 
-        if (accessToken) {
+        if (auth.currentUser) {
             await saveToDatabase(s.title, text, aiReply);
         }
         renderSidebar();
@@ -644,6 +637,7 @@ async function saveToDatabase(title, userText, aiText) {
 
             s.id = chatRef.id;
             currentSessionId = chatRef.id;
+            localStorage.setItem('azamat_sessions', JSON.stringify(sessions));
         }
 
         const chatRef = db.collection('users').doc(user.uid)
@@ -661,6 +655,10 @@ async function saveToDatabase(title, userText, aiText) {
         return currentSessionId;
     } catch (e) {
         console.error("Firestore Error:", e);
+        const message = currentLang === 'kk'
+            ? 'Чатты сақтау мүмкін болмады. Firebase Firestore ережелерін тексеріңіз.'
+            : 'Не удалось сохранить чат. Проверьте правила Firebase Firestore.';
+        alert(message);
         return null;
     }
 }
@@ -773,11 +771,18 @@ function copyCode(elementId, event) {
 
 function removeThinking(id) { document.getElementById(id)?.remove(); }
 function loginWithGoogle() {
+    if (window.location.protocol === 'file:') {
+        alert(currentLang === 'kk'
+            ? 'Google арқылы кіру үшін Azamat.html файлын http://localhost арқылы ашыңыз. Қазір файл тікелей ашылған.'
+            : 'Для входа через Google откройте Azamat через http://localhost. Сейчас файл открыт напрямую через file://.');
+        return;
+    }
     auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(error => {
         console.error('Ошибка входа через Google:', error);
+        const details = error.code || error.message || 'неизвестная ошибка';
         alert(currentLang === 'kk'
-            ? 'Google арқылы кіру мүмкін болмады. Қонақ режимін пайдаланыңыз.'
-            : 'Не удалось войти через Google. Используйте гостевой режим.');
+            ? `Google арқылы кіру мүмкін болмады (${details}). Firebase баптауларын тексеріңіз.`
+            : `Не удалось войти через Google (${details}). Проверьте настройки Firebase.`);
     });
 }
 function logout() {
