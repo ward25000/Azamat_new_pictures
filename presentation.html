@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azamat AI — презентация</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #080b0a;
+            --panel: rgba(20, 27, 24, .82);
+            --line: rgba(255, 255, 255, .11);
+            --muted: #91a19a;
+            --text: #f2f7f4;
+            --green: #00f58a;
+            --green-soft: #a9ffd4;
+            --purple: #b09cff;
+            --orange: #ffb86b;
+        }
+
+        * { box-sizing: border-box; }
+        html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--text); }
+        body {
+            overflow: hidden;
+            font-family: "DM Sans", sans-serif;
+            background:
+                radial-gradient(circle at 77% 12%, rgba(0, 245, 138, .12), transparent 28rem),
+                radial-gradient(circle at 13% 82%, rgba(77, 69, 160, .18), transparent 25rem),
+                #080b0a;
+        }
+        button, a { font: inherit; }
+        button { color: inherit; cursor: pointer; }
+        .deck { min-height: 100vh; position: relative; }
+        .topbar {
+            position: fixed; z-index: 5; inset: 0 0 auto; display: flex; align-items: center;
+            justify-content: space-between; padding: 25px clamp(22px, 5vw, 78px);
+        }
+        .brand { display: flex; gap: 11px; align-items: center; font-weight: 700; letter-spacing: .08em; }
+        .brand-mark, .logo-mark {
+            display: grid; place-items: center; color: #06120b; font-weight: 800;
+            background: linear-gradient(135deg, #7dffbd, var(--green) 48%, #008c51);
+            clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+        }
+        .brand-mark { width: 25px; height: 25px; font-size: 11px; }
+        .slide-count { color: var(--muted); font-size: 12px; letter-spacing: .12em; }
+        .progress { position: fixed; top: 0; left: 0; z-index: 6; height: 3px; background: var(--green); transition: width .35s ease; }
+        .slides { height: 100vh; }
+        .slide {
+            display: none; height: 100vh; max-width: 1360px; margin: auto;
+            padding: 120px clamp(22px, 7vw, 110px) 100px;
+            position: relative; align-items: center;
+        }
+        .slide.active { display: flex; animation: appear .45s ease both; }
+        @keyframes appear { from { opacity: 0; transform: translateY(13px); } to { opacity: 1; transform: none; } }
+        .eyebrow { color: var(--green); font-size: 12px; letter-spacing: .2em; text-transform: uppercase; font-weight: 700; margin-bottom: 18px; }
+        h1, h2, h3 { font-family: "Space Grotesk", sans-serif; margin: 0; line-height: 1.02; }
+        h1 { font-size: clamp(48px, 8vw, 104px); letter-spacing: -.07em; max-width: 700px; }
+        h2 { font-size: clamp(38px, 5vw, 72px); letter-spacing: -.055em; max-width: 720px; }
+        h3 { font-size: 20px; }
+        .lead { color: #b7c5bf; font-size: clamp(16px, 1.7vw, 21px); line-height: 1.55; max-width: 590px; margin: 25px 0 0; }
+        .green { color: var(--green); }
+        .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 34px; }
+        .btn { display: inline-flex; align-items: center; gap: 9px; border: 1px solid var(--line); border-radius: 13px; padding: 13px 18px; text-decoration: none; transition: .2s; }
+        .btn:hover { transform: translateY(-2px); border-color: rgba(0, 245, 138, .55); }
+        .btn-primary { background: var(--green); color: #06120b; border-color: var(--green); font-weight: 700; }
+        .btn-ghost { color: var(--muted); background: rgba(255, 255, 255, .03); }
+        .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 7vw; width: 100%; align-items: center; }
+        .hero-art { min-height: 475px; position: relative; display: grid; place-items: center; }
+        .orb { width: min(31vw, 360px); aspect-ratio: 1; border-radius: 50%; background: radial-gradient(circle at 35% 25%, #b5ffdb, #00dc79 31%, #006a42 66%, #10221a 67%); box-shadow: 0 0 75px rgba(0, 245, 138, .3); animation: breathe 4s ease-in-out infinite; }
+        @keyframes breathe { 50% { transform: scale(1.04); box-shadow: 0 0 115px rgba(0, 245, 138, .42); } }
+        .orbit { position: absolute; width: min(42vw, 520px); aspect-ratio: 1; border: 1px solid rgba(0, 245, 138, .22); border-radius: 50%; transform: rotate(-28deg); }
+        .orbit:after { content: ""; position: absolute; width: 12px; height: 12px; border-radius: 50%; background: var(--green); top: 16%; right: 8%; box-shadow: 0 0 20px var(--green); }
+        .floating { position: absolute; padding: 12px 15px; border: 1px solid var(--line); border-radius: 14px; background: rgba(16, 24, 20, .82); backdrop-filter: blur(12px); color: #d8e6df; font-size: 13px; box-shadow: 0 16px 40px rgba(0,0,0,.3); }
+        .float-a { top: 11%; right: 5%; } .float-b { bottom: 13%; left: 5%; } .float-c { top: 38%; left: 0; }
+        .split { width: 100%; display: grid; grid-template-columns: .85fr 1.15fr; gap: clamp(35px, 8vw, 120px); align-items: center; }
+        .facts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 30px; max-width: 570px; }
+        .fact, .feature, .scenario { border: 1px solid var(--line); border-radius: 18px; background: var(--panel); padding: 21px; }
+        .fact strong { display: block; color: var(--green); font: 700 28px "Space Grotesk"; margin-bottom: 5px; }
+        .fact span { color: var(--muted); font-size: 13px; line-height: 1.4; }
+        .mock-window { border: 1px solid rgba(255,255,255,.14); border-radius: 21px; background: #101412; box-shadow: 0 25px 80px rgba(0,0,0,.38); overflow: hidden; width: 100%; max-width: 650px; }
+        .mock-head { height: 45px; display: flex; align-items: center; gap: 8px; padding: 0 17px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 11px; }
+        .dot { width: 7px; height: 7px; border-radius: 50%; background: #526059; } .dot.live { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        .mock-body { padding: 27px; }
+        .chat-row { display: flex; gap: 12px; margin-bottom: 18px; align-items: flex-start; }
+        .mini-logo { flex: 0 0 28px; height: 28px; border-radius: 9px; background: linear-gradient(135deg, var(--green), #006b43); }
+        .bubble { max-width: 85%; background: #1b2520; border: 1px solid rgba(255,255,255,.07); border-radius: 5px 15px 15px; padding: 12px 14px; color: #d4e2da; font-size: 13px; line-height: 1.5; }
+        .bubble.user { margin-left: auto; background: #123525; border-radius: 15px 5px 15px; color: var(--green-soft); }
+        .input-demo { border: 1px solid #30423a; border-radius: 14px; padding: 12px 14px; color: #71837a; font-size: 12px; display: flex; justify-content: space-between; margin-top: 24px; }
+        .send { color: #052113; background: var(--green); padding: 5px 8px; border-radius: 7px; }
+        .callout { border-left: 2px solid var(--green); padding-left: 18px; color: #dbeae2; line-height: 1.5; margin-top: 25px; }
+        .feature-grid { width: 100%; display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-top: 32px; }
+        .feature { min-height: 158px; transition: transform .2s, border-color .2s; }
+        .feature:hover { transform: translateY(-4px); border-color: rgba(0,245,138,.45); }
+        .feature-icon { color: var(--green); font-size: 24px; margin-bottom: 22px; }
+        .feature p, .scenario p { color: var(--muted); line-height: 1.45; font-size: 13px; margin: 9px 0 0; }
+        .voice-card { width: 100%; max-width: 600px; padding: 34px; border: 1px solid rgba(0,245,138,.28); border-radius: 25px; background: linear-gradient(145deg, rgba(0,245,138,.11), rgba(20,27,24,.82) 50%); }
+        .voice-status { display: flex; align-items: center; gap: 10px; color: var(--green); font-size: 13px; margin-bottom: 38px; }
+        .pulse { width: 10px; height: 10px; border-radius: 50%; background: var(--green); box-shadow: 0 0 0 8px rgba(0,245,138,.1); animation: pulse 1.4s infinite; }
+        @keyframes pulse { 50% { box-shadow: 0 0 0 15px rgba(0,245,138,0); } }
+        .waves { display: flex; align-items: center; justify-content: center; gap: 5px; height: 100px; }
+        .bar { width: 5px; border-radius: 9px; background: var(--green); animation: wave 1.1s ease-in-out infinite alternate; }
+        .bar:nth-child(2n) { animation-delay: -.4s; } .bar:nth-child(3n) { animation-delay: -.8s; }
+        @keyframes wave { from { height: 18px; opacity: .4; } to { height: 82px; opacity: 1; } }
+        .quote { text-align: center; margin-top: 28px; color: #d5e5dc; font-size: 19px; }
+        .image-demo { position: relative; width: 100%; max-width: 570px; min-height: 370px; border: 1px solid var(--line); border-radius: 24px; background: linear-gradient(135deg, #172d28, #111716); overflow: hidden; padding: 29px; }
+        .image-demo:before { content: ""; position: absolute; width: 230px; height: 230px; border-radius: 46% 54% 60% 40%; background: linear-gradient(135deg, #bbffe0, #268b68); right: 14%; top: 13%; transform: rotate(18deg); opacity: .85; }
+        .image-demo:after { content: "IMAGE"; position: absolute; right: 25px; top: 22px; color: rgba(255,255,255,.18); font-size: 10px; letter-spacing: .22em; }
+        .scan-line { position: absolute; z-index: 1; right: 8%; top: 28%; width: 55%; height: 2px; background: var(--green); box-shadow: 0 0 14px var(--green); }
+        .analysis { position: absolute; z-index: 2; bottom: 22px; left: 22px; right: 22px; padding: 15px; border: 1px solid rgba(0,245,138,.3); border-radius: 14px; background: rgba(6, 16, 11, .78); backdrop-filter: blur(12px); font-size: 12px; line-height: 1.5; }
+        .analysis b { display: block; color: var(--green); margin-bottom: 4px; }
+        .scenarios { width: 100%; }
+        .scenario-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 35px; }
+        .scenario { min-height: 190px; } .scenario-number { color: var(--green); font: 700 30px "Space Grotesk"; }
+        .scenario h3 { margin-top: 22px; font-size: 17px; }
+        .final { text-align: center; width: 100%; }
+        .final h2 { margin: 0 auto; }
+        .final .lead { margin: 23px auto 0; }
+        .final-mark { margin: 0 auto 29px; width: 78px; height: 78px; font: 700 27px "Space Grotesk"; }
+        .controls { position: fixed; z-index: 5; right: clamp(22px, 5vw, 78px); bottom: 26px; display: flex; align-items: center; gap: 10px; }
+        .nav-btn, .dot-nav { border: 1px solid var(--line); background: rgba(12,18,15,.8); border-radius: 10px; width: 37px; height: 37px; transition: .2s; }
+        .nav-btn:hover, .dot-nav.active { border-color: var(--green); color: var(--green); }
+        .dots { display: flex; gap: 7px; padding: 0 7px; } .dot-nav { width: 7px; height: 7px; padding: 0; border-radius: 50%; background: #415049; border: 0; } .dot-nav.active { width: 20px; border-radius: 5px; background: var(--green); }
+        .hint { position: fixed; left: clamp(22px, 5vw, 78px); bottom: 31px; color: #65756d; font-size: 11px; letter-spacing: .08em; }
+
+        @media (max-width: 800px) {
+            body { overflow: auto; } .slide { min-height: 100vh; height: auto; padding-top: 100px; padding-bottom: 95px; }
+            .hero, .split { grid-template-columns: 1fr; gap: 38px; } .hero-art { min-height: 300px; order: -1; }
+            .orb { width: 210px; } .orbit { width: 280px; } .floating { font-size: 11px; }
+            .feature-grid, .scenario-grid { grid-template-columns: 1fr; } .feature { min-height: 0; }
+            .image-demo { min-height: 300px; } .hint { display: none; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="deck">
+        <div class="progress" id="progress"></div>
+        <header class="topbar">
+            <div class="brand"><span class="brand-mark">A</span> AZAMAT</div>
+            <div class="slide-count"><span id="current">01</span> / 08</div>
+        </header>
+
+        <main class="slides">
+            <section class="slide active">
+                <div class="hero">
+                    <div>
+                        <div class="eyebrow">Национальный AI-помощник</div>
+                        <h1>Думать.<br><span class="green">Понимать.</span><br>Помогать.</h1>
+                        <p class="lead">Азамат — интеллектуальный собеседник для учёбы, работы, анализа и повседневных задач. Общается естественно и отвечает по делу.</p>
+                        <div class="actions"><a class="btn btn-primary" href="Azamat.html">Открыть Азамат <span>↗</span></a><button class="btn btn-ghost" data-next>Смотреть презентацию →</button></div>
+                    </div>
+                    <div class="hero-art"><div class="orbit"></div><div class="orb"></div><div class="floating float-a">✦ Понимает контекст</div><div class="floating float-b">◉ Голосовой диалог</div><div class="floating float-c">⌁ Анализирует изображения</div></div>
+                </div>
+            </section>
+
+            <section class="slide">
+                <div class="split">
+                    <div><div class="eyebrow">01 / Концепция</div><h2>Не просто чат.<br><span class="green">Рабочее пространство.</span></h2><p class="lead">Азамат объединяет разговор, знания и инструменты в одном понятном интерфейсе.</p><div class="callout">Главная идея — сделать сложные технологии простыми для человека.</div></div>
+                    <div class="facts"><div class="fact"><strong>01</strong><span>Естественный диалог без сложных команд</span></div><div class="fact"><strong>02</strong><span>Русский и казахский языки</span></div><div class="fact"><strong>03</strong><span>Текст, голос и изображения</span></div><div class="fact"><strong>04</strong><span>Понятные ответы с логикой и структурой</span></div></div>
+                </div>
+            </section>
+
+            <section class="slide">
+                <div class="split">
+                    <div><div class="eyebrow">02 / Интерфейс</div><h2>Чистый экран.<br><span class="green">Всё под рукой.</span></h2><p class="lead">Минималистичный интерфейс не отвлекает от задачи: история диалогов слева, режимы и язык сверху, ответ — в центре.</p></div>
+                    <div class="mock-window"><div class="mock-head"><span class="dot live"></span><span class="dot"></span><span class="dot"></span><span style="margin-left:auto">ҚАЗ&nbsp;&nbsp; РУС&nbsp;&nbsp; · &nbsp;💬 Чат</span></div><div class="mock-body"><div class="chat-row"><div class="mini-logo"></div><div class="bubble">Сәлем! Мен Азаматпын. Қалай көмектесе аламын?</div></div><div class="chat-row"><div class="bubble user">Объясни сложную тему простыми словами</div></div><div class="chat-row"><div class="mini-logo"></div><div class="bubble">Конечно. Разберём по шагам, добавлю пример и короткий вывод.</div></div><div class="input-demo">Задайте вопрос или прикрепите изображение <span class="send">↑</span></div></div></div>
+                </div>
+            </section>
+
+            <section class="slide">
+                <div class="split">
+                    <div><div class="eyebrow">03 / Голос</div><h2>Разговор, а не печать.</h2><p class="lead">Нажмите на микрофон — Азамат распознает речь, поймёт вопрос и может озвучить ответ.</p><div class="callout">Удобно, когда руки заняты или мысль проще сказать, чем напечатать.</div></div>
+                    <div class="voice-card"><div class="voice-status"><span class="pulse"></span> Азамат слушает</div><div class="waves"><i class="bar" style="height:30px"></i><i class="bar" style="height:67px"></i><i class="bar" style="height:45px"></i><i class="bar" style="height:84px"></i><i class="bar" style="height:55px"></i><i class="bar" style="height:35px"></i><i class="bar" style="height:72px"></i><i class="bar" style="height:42px"></i><i class="bar" style="height:88px"></i><i class="bar" style="height:49px"></i><i class="bar" style="height:29px"></i></div><div class="quote">«Объясни это простым языком»</div></div>
+                </div>
+            </section>
+
+            <section class="slide">
+                <div class="split">
+                    <div><div class="eyebrow">04 / Мультимодальность</div><h2>Покажите задачу.<br><span class="green">Азамат разберётся.</span></h2><p class="lead">Загрузите изображение: схему, задачу, ошибку в коде или фотографию. Азамат читает визуальную информацию и объясняет результат.</p></div>
+                    <div class="image-demo"><div class="scan-line"></div><div class="analysis"><b>✦ Анализ изображения</b>Нашёл ключевой объект и выделил главное. Могу объяснить, сравнить или предложить следующий шаг.</div></div>
+                </div>
+            </section>
+
+            <section class="slide">
+                <div style="width:100%"><div class="eyebrow">05 / Режимы мышления</div><h2>Один помощник —<br><span class="green">разные задачи.</span></h2><div class="feature-grid"><div class="feature"><div class="feature-icon">⌕</div><h3>Deep Research</h3><p>Собирает тему в структуру: факты, связи, выводы и направления для дальнейшего изучения.</p></div><div class="feature"><div class="feature-icon" style="color:var(--purple)">✦</div><h3>Deep Thinking</h3><p>Разбирает сложный вопрос последовательно, не перескакивая через важные шаги.</p></div><div class="feature"><div class="feature-icon" style="color:var(--orange)">{ }</div><h3>Code Mode</h3><p>Помогает читать код, находить ошибки и объяснять технические решения понятным языком.</p></div><div class="feature"><div class="feature-icon">◉</div><h3>Умный диалог</h3><p>Удерживает контекст беседы и подстраивает глубину ответа под запрос пользователя.</p></div></div></div>
+            </section>
+
+            <section class="slide">
+                <div class="scenarios"><div class="eyebrow">06 / Польза</div><h2>От вопроса —<br><span class="green">к результату.</span></h2><div class="scenario-grid"><div class="scenario"><div class="scenario-number">01</div><h3>Учёба</h3><p>Разобрать тему, решить задачу, подготовить план и проверить понимание.</p></div><div class="scenario"><div class="scenario-number">02</div><h3>Работа</h3><p>Сформулировать идею, сравнить варианты, сделать краткий анализ.</p></div><div class="scenario"><div class="scenario-number">03</div><h3>Повседневность</h3><p>Задать вопрос голосом, показать изображение и быстро получить подсказку.</p></div></div></div>
+            </section>
+
+            <section class="slide">
+                <div class="final"><div class="brand-mark final-mark">A</div><div class="eyebrow">Итог</div><h2>Азамат — ваш<br><span class="green">умный собеседник.</span></h2><p class="lead">Понятный, мультимодальный и ориентированный на реальную помощь — на русском и казахском языках.</p><div class="actions" style="justify-content:center"><a class="btn btn-primary" href="Azamat.html">Попробовать Азамат ↗</a><button class="btn btn-ghost" data-prev>← Вернуться</button></div></div>
+            </section>
+        </main>
+
+        <div class="hint">← →  НАВИГАЦИЯ</div>
+        <nav class="controls" aria-label="Навигация презентации"><button class="nav-btn" id="prev" aria-label="Предыдущий слайд">←</button><div class="dots" id="dots"></div><button class="nav-btn" id="next" aria-label="Следующий слайд">→</button></nav>
+    </div>
+    <script>
+        const slides = [...document.querySelectorAll(".slide")];
+        const dots = document.getElementById("dots");
+        const progress = document.getElementById("progress");
+        const current = document.getElementById("current");
+        let index = 0;
+        slides.forEach((_, i) => {
+            const dot = document.createElement("button");
+            dot.className = "dot-nav";
+            dot.setAttribute("aria-label", `Слайд ${i + 1}`);
+            dot.addEventListener("click", () => goTo(i));
+            dots.appendChild(dot);
+        });
+        function goTo(next) {
+            index = (next + slides.length) % slides.length;
+            slides.forEach((slide, i) => slide.classList.toggle("active", i === index));
+            [...dots.children].forEach((dot, i) => dot.classList.toggle("active", i === index));
+            current.textContent = String(index + 1).padStart(2, "0");
+            progress.style.width = `${((index + 1) / slides.length) * 100}%`;
+        }
+        document.getElementById("next").addEventListener("click", () => goTo(index + 1));
+        document.getElementById("prev").addEventListener("click", () => goTo(index - 1));
+        document.querySelectorAll("[data-next]").forEach(button => button.addEventListener("click", () => goTo(index + 1)));
+        document.querySelectorAll("[data-prev]").forEach(button => button.addEventListener("click", () => goTo(index - 1)));
+        document.addEventListener("keydown", event => {
+            if (event.key === "ArrowRight" || event.key === " ") goTo(index + 1);
+            if (event.key === "ArrowLeft") goTo(index - 1);
+            if (event.key === "Home") goTo(0);
+            if (event.key === "End") goTo(slides.length - 1);
+        });
+        goTo(0);
+    </script>
+</body>
+
+</html>
