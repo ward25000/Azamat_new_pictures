@@ -886,31 +886,85 @@ function switchMode(mode) {
 
 // ===== VOICE =====
 let recognition = null;
+let isVoiceRecording = false;
+let voiceRecognitionState = 'idle';
 let lastMessage = '';
+
+function setVoiceRecordingState(isRecording) {
+    isVoiceRecording = isRecording;
+    const button = document.getElementById('voice-btn');
+    const icon = button?.querySelector('i');
+    const visualizer = document.getElementById('voice-visualizer');
+    if (!button || !icon || !visualizer) return;
+    button.classList.toggle('bg-green-500', isRecording);
+    button.classList.toggle('border-green-400', isRecording);
+    icon.className = isRecording ? 'fas fa-stop text-white' : 'fas fa-microphone text-green-400';
+    button.title = isRecording ? 'Остановить запись' : 'Начать запись';
+    button.setAttribute('aria-label', button.title);
+    visualizer.classList.toggle('active', isRecording);
+}
 
 function startVoiceInput() {
     if (!recognition) {
         const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) { alert('Браузер не поддерживает голосовой ввод'); return; }
+        if (!SR) {
+            alert(currentLang === 'kk'
+                ? 'Бұл браузер дауысты тануды қолдамайды.'
+                : 'Этот браузер не поддерживает распознавание речи.');
+            return;
+        }
         recognition = new SR();
-        recognition.continuous = false;
-        recognition.interimResults = false;
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
         recognition.onstart = () => {
-            document.getElementById('voice-btn').classList.add('bg-green-500');
+            voiceRecognitionState = 'recording';
+            setVoiceRecordingState(true);
             document.getElementById('main-logo')?.classList.add('listening');
         };
         recognition.onend = () => {
-            document.getElementById('voice-btn').classList.remove('bg-green-500');
+            voiceRecognitionState = 'idle';
+            setVoiceRecordingState(false);
             document.getElementById('main-logo')?.classList.remove('listening');
         };
         recognition.onresult = (e) => {
-            const text = e.results[0][0].transcript;
-            document.getElementById('user-input').value = text;
+            const input = document.getElementById('user-input');
+            let transcript = '';
+            for (let index = 0; index < e.results.length; index += 1) {
+                transcript += e.results[index][0].transcript;
+            }
+            input.value = transcript.trim();
+            input.dispatchEvent(new Event('input'));
         };
-        recognition.onerror = (e) => console.error('Ошибка распознавания:', e.error);
+        recognition.onerror = (e) => {
+            console.error('Ошибка распознавания:', e.error);
+            if (e.error === 'not-allowed' || e.error === 'service-not-allowed') {
+                alert(currentLang === 'kk'
+                    ? 'Микрофонға рұқсат беріңіз.'
+                    : 'Разрешите доступ к микрофону в браузере.');
+            }
+            voiceRecognitionState = 'idle';
+            setVoiceRecordingState(false);
+        };
+    }
+    if (voiceRecognitionState !== 'idle') {
+        voiceRecognitionState = 'stopping';
+        recognition.stop();
+        return;
     }
     recognition.lang = langData[currentLang].voiceLang;
-    recognition.start();
+    voiceRecognitionState = 'starting';
+    try {
+        recognition.start();
+    } catch (error) {
+        if (error.name === 'InvalidStateError') {
+            voiceRecognitionState = 'recording';
+            setVoiceRecordingState(true);
+            return;
+        }
+        voiceRecognitionState = 'idle';
+        console.error('Не удалось запустить распознавание:', error);
+    }
 }
 
 const VOICE_ID = 'q0ORSR7zoA0g6nLuDk1j';

@@ -213,6 +213,29 @@ body { background-color: #0a0a0a; color: #e0e0e0; font-family: 'Inter', sans-ser
 .azamat-composer > button:hover,
 .azamat-composer > div > button:hover { transform: translateY(-1px); }
 .azamat-composer > div { min-width: 0; }
+.voice-visualizer {
+    display: none;
+    align-items: center;
+    gap: 3px;
+    height: 42px;
+    padding: 0 4px;
+}
+.voice-visualizer.active { display: flex; }
+.voice-visualizer span {
+    width: 3px;
+    height: 10px;
+    border-radius: 3px;
+    background: #00ff88;
+    animation: voiceBar 0.8s ease-in-out infinite alternate;
+}
+.voice-visualizer span:nth-child(2) { animation-delay: -0.55s; }
+.voice-visualizer span:nth-child(3) { animation-delay: -0.25s; }
+.voice-visualizer span:nth-child(4) { animation-delay: -0.7s; }
+.voice-visualizer span:nth-child(5) { animation-delay: -0.4s; }
+@keyframes voiceBar {
+    from { height: 7px; opacity: 0.45; }
+    to { height: 30px; opacity: 1; }
+}
 .chat-msg { animation: fadeIn 0.3s; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 #login-screen { z-index: 1000; background: radial-gradient(circle, #1a1a1a 0%, #0a0a0a 100%); }
