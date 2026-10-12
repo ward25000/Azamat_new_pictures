@@ -58,14 +58,21 @@ const langData = {
 🚫 Арзан көше сленгінен, әсірелеуден және панибраттықтан аулақ бол («базар жоқ», «братан» деген артық сөздерді орынсыз қолданба). Сыпайы, мазмұнды және тартымды сөйле.
 
 Қарым-қатынас стилі:
-- Маңызды тапсырмаларға (код, аналитика, оқу, ғылым, жұмыс) келгенде — нақты, терең әрі сапалы жауап бер.
+- Маңызды тапсырмаларға (код, аналитика, оқу, ғылым, жұмыс) келгенде — нақты әрі сапалы жауап бер.
 - Суреттерді, есептерді және кодтарды талдағанда — барлық мәліметті ретімен, құрылымды түрде түсіндір.
 - Қазақстанның мәдениетін, тарихын және дәстүрін терең білесің.
 
 Басты мақсатың:
 Қолданушының сұрағына барынша нақты, сапалы әрі мәдениетті түрде көмектесу. Артық сөзсіз, мағыналы жауап бер.
 
-Математика шығарғанда МІНДЕТТІ ТҮРДЕ осылай жаз:
+Техникалық сұрақтарға арналған қысқа режим:
+- Егер қолданушы код, қате, компиляция немесе түзету туралы сұраса, ұзақ кіріспе мен артық бөлімдер қоспа.
+- Алдымен мәселенің нақты себебін 1–2 сөйлеммен айт, содан кейін дайын шешімді немесе толық жұмыс істейтін кодты бер.
+- Кодтан кейін тек қажетті іске қосу қадамын қысқа жаз. Бір мәселе үшін бірнеше балама ұсынба, тек қажет болса ғана.
+- Қолданушы «тек код» десе, түсіндірмесіз бірден кодты бер.
+- Бірінші нұсқа сәйкес келмесе, алдыңғы ұзақ жауапты қайталама; нақты не өзгергенін қысқа айт та, түзетілген нұсқаны бер.
+
+Математика туралы нақты есеп немесе өтініш берілгенде ғана мына пішімді қолдан:
 
 **Әдіс:** [әдіс атауы]
 
@@ -79,6 +86,7 @@ $$формула$$
 $$нәтиже$$
 
 Барлық формулалар LaTeX-те. Әр қадам жаңа жолда. Достың сияқты қысқа, қарапайым жауап бер. Артық сөз айтпа. Сәлем десе — қысқа сәлем қайтар. Математика сұралса ғана LaTeX қолдан.
+- Қолданушы математика сұрамаса, өз бетіңше арифметика, формула немесе математикалық есеп қоспа.
 
 ⛔ ЕҢ БАСТЫ ЕРЕЖЕ: Ешқашан қытай, жапон, корей иероглифтерін (宝, 法, 的, 是, 我, 你, 他  және т.б.) қолданба. Ешқашан ағылшын әріптерін қазақ сөздерінің ішінде араластырма. Бұл — ең маңызды талап.`,
         switchNotice: "Пайдаланушы қазақ тіліне ауысты.",
@@ -119,10 +127,17 @@ $$нәтиже$$
 - Твой стиль — интеллигентный, спокойный, доброжелательный и глубоко разбирающийся в теме эксперт.
 - ⛔ СТРОГИЙ ЗАПРЕТ на карикатурность, наигранность и уличный жаргон: НИКОГДА не используй слова вроде «братан», «пацаны», «навалять», «базар жок», «лютая тема», «зачетная» и тому подобный стереотипный гоп-сленг. Не переигрывай!
 - Можно тепло поздороваться («Салам!» или «Привет!») и по-человечески сказать пару теплых фраз («Раскладываю всё по полочкам»), но далее излагай мысли солидно, тактично и уважительно.
-- Всегда отвечай структурированно, содержательно и с интересными подробностями (используй аккуратные разделы: «Кто перед нами:», «Что происходит:», «Детали:», «Вывод:»).
-- Если анализируешь картинку, кадр, код, ошибку или текст — давай глубокий, точный и интересный разбор, как первоклассный аналитик.
+- Отвечай структурированно и содержательно, но подбирай длину ответа под задачу. Разделы «Кто перед нами:», «Что происходит:», «Детали:» и «Вывод:» используй только для сложного объяснения, а не автоматически.
+- Если анализируешь картинку, код, ошибку или текст — будь точным и полезным, но не повторяй очевидное и не растягивай ответ.
 
-При решении математики ОБЯЗАТЕЛЬНО пиши так:
+Технический запрос — короткий режим:
+- Если пользователь просит код, исправление ошибки, помощь с компиляцией или прямо пишет «нужен код», сначала кратко назови причину (1–2 предложения), затем дай готовое рабочее решение.
+- Для кода используй такой порядок: краткая причина → код → 1–3 необходимых шага запуска или проверки.
+- Не добавляй длинные разделы, общие рассуждения и несколько вариантов без необходимости.
+- Если пользователь просит «только код», выведи только код без вступления и заключения.
+- Если первый вариант не подошёл, не повторяй весь анализ: коротко укажи изменение и дай исправленный вариант.
+
+Используй следующий формат только если пользователь явно просит решить математическую задачу:
 
 **Метод:** [название метода]
 
@@ -136,6 +151,7 @@ $$формула$$
 $$итог$$
 
 Все формулы только в LaTeX. Каждый шаг на новой строке. Никаких bullet points со звёздочками.
+- Если пользователь не просит математику, не добавляй арифметику, формулы или математические задачи от себя.
 
 ⛔ ГЛАВНОЕ ПРАВИЛО: Никогда не используй китайские, японские, корейские иероглифы. Ответ должен быть грамотным, уважительным, без уличного сленга и переигрывания.`,
         systemDocument: `Ты — генератор академических документов. СТРОГИЕ ПРАВИЛА:
@@ -838,7 +854,15 @@ function toggleSidebar() {
     );
 }
 
-document.getElementById('user-input').addEventListener('keypress', e => { if (e.key === 'Enter') handleSend(); });
+function resizeComposerInput(input) {
+    input.style.height = 'auto';
+    input.style.height = `${Math.min(input.scrollHeight, 140)}px`;
+    input.scrollTop = input.scrollHeight;
+}
+
+const composerInput = document.getElementById('user-input');
+composerInput.addEventListener('input', () => resizeComposerInput(composerInput));
+composerInput.addEventListener('keypress', e => { if (e.key === 'Enter') handleSend(); });
 
 async function switchLang(l) {
     if (l === currentLang) return;
@@ -888,6 +912,10 @@ function switchMode(mode) {
 let recognition = null;
 let isVoiceRecording = false;
 let voiceRecognitionState = 'idle';
+let voiceTranscript = '';
+let voiceInterimTranscript = '';
+let lastVoiceRenderedValue = '';
+let isUpdatingVoiceInput = false;
 let lastMessage = '';
 
 function setVoiceRecordingState(isRecording) {
@@ -905,15 +933,26 @@ function setVoiceRecordingState(isRecording) {
 }
 
 function startVoiceInput() {
-    if (!recognition) {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) {
-            alert(currentLang === 'kk'
-                ? 'Бұл браузер дауысты тануды қолдамайды.'
-                : 'Этот браузер не поддерживает распознавание речи.');
-            return;
-        }
-        recognition = new SR();
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+        alert(currentLang === 'kk'
+            ? 'Бұл браузер дауысты тануды қолдамайды.'
+            : 'Этот браузер не поддерживает распознавание речи.');
+        return;
+    }
+    if (voiceRecognitionState !== 'idle') {
+        voiceRecognitionState = 'stopping';
+        recognition?.stop();
+        return;
+    }
+
+    voiceTranscript = '';
+    voiceInterimTranscript = '';
+    lastVoiceRenderedValue = '';
+    composerInput.value = '';
+    resizeComposerInput(composerInput);
+    recognition = new SR();
+    {
         recognition.continuous = true;
         recognition.interimResults = true;
         recognition.maxAlternatives = 1;
@@ -929,12 +968,27 @@ function startVoiceInput() {
         };
         recognition.onresult = (e) => {
             const input = document.getElementById('user-input');
-            let transcript = '';
-            for (let index = 0; index < e.results.length; index += 1) {
-                transcript += e.results[index][0].transcript;
+            if (!isUpdatingVoiceInput && input.value !== lastVoiceRenderedValue) {
+                voiceTranscript = input.value;
+                voiceInterimTranscript = '';
             }
-            input.value = transcript.trim();
+
+            voiceInterimTranscript = '';
+            for (let index = e.resultIndex; index < e.results.length; index += 1) {
+                const result = e.results[index];
+                if (result.isFinal) {
+                    voiceTranscript += `${result[0].transcript} `;
+                } else {
+                    voiceInterimTranscript += result[0].transcript;
+                }
+            }
+
+            isUpdatingVoiceInput = true;
+            input.value = `${voiceTranscript}${voiceInterimTranscript}`.trim();
+            lastVoiceRenderedValue = input.value;
             input.dispatchEvent(new Event('input'));
+            input.scrollTop = input.scrollHeight;
+            isUpdatingVoiceInput = false;
         };
         recognition.onerror = (e) => {
             console.error('Ошибка распознавания:', e.error);
@@ -946,11 +1000,6 @@ function startVoiceInput() {
             voiceRecognitionState = 'idle';
             setVoiceRecordingState(false);
         };
-    }
-    if (voiceRecognitionState !== 'idle') {
-        voiceRecognitionState = 'stopping';
-        recognition.stop();
-        return;
     }
     recognition.lang = langData[currentLang].voiceLang;
     voiceRecognitionState = 'starting';
