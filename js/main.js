@@ -11,7 +11,6 @@ const auth = firebase.auth();
 const db = firebase.firestore();
 
 const BACKEND_URL = 'http://127.0.0.1:8000/api';
-const LOCAL_TTS_URL = 'http://127.0.0.1:8765/api/tts';
 const FALLBACK_MODELS = ['gemini-3.5-flash-lite', 'gemini-3.5-flash', 'gemini-3.8-flash', 'gemini-flash-latest'];
 
 function readStoredSessions() {
@@ -869,7 +868,9 @@ function switchMode(mode) {
         ? 'text-xs accent-green border-b-2 border-green-500'
         : 'text-xs text-gray-500';
 
-    const modeText = mode === 'chat' ? '💬 Режим общения' : '📄 Режим документа';
+    const modeText = mode === 'chat'
+        ? '💬 Режим общения'
+        : '📄 Режим документа';
     const n = document.createElement('div');
     n.className = 'fixed top-20 left-1/2 -translate-x-1/2 bg-green-500 text-black px-6 py-3 rounded-2xl font-bold z-50';
     n.style.animation = 'fadeInOut 2s ease-in-out';
@@ -907,9 +908,27 @@ function startVoiceInput() {
     recognition.start();
 }
 
-const VOICE_ID = 'RdU9RJ3y0e8FAFYSj3EA';
-let availableVoiceId = localStorage.getItem('azamat_elevenlabs_voice_id') || VOICE_ID;
+const VOICE_ID = 'q0ORSR7zoA0g6nLuDk1j';
 let currentAudio = null;
+let speechRequestController = null;
+
+function setSpeechButtonState(isPlaying) {
+    const button = document.getElementById('speech-control-btn');
+    const icon = document.getElementById('speech-control-icon');
+    if (!button || !icon) return;
+    icon.className = isPlaying ? 'fas fa-pause text-gray-300' : 'fas fa-volume-up text-gray-400';
+    button.title = isPlaying ? 'Пауза озвучки' : 'Озвучить последний ответ';
+    button.setAttribute('aria-label', button.title);
+}
+
+function prepareSpeechText(text) {
+    return text
+        .replace(/```[\s\S]*?```/g, '')
+        .replace(/[*_#`]/g, '')
+        .replace(/\n{2,}/g, '\n')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
 
 async function playAudioResponse(response) {
     const audioBlob = await response.blob();
@@ -918,49 +937,69 @@ async function playAudioResponse(response) {
     currentAudio.volume = DEFAULT_VOLUME;
     currentAudio.onended = () => {
         document.getElementById('main-logo')?.classList.remove('speaking');
+        setSpeechButtonState(false);
+        currentAudio = null;
         URL.revokeObjectURL(audioUrl);
     };
+    setSpeechButtonState(true);
     await currentAudio.play();
 }
 
-async function speakWithEdgeTts(text) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 15000);
-    try {
-        const response = await fetch(LOCAL_TTS_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, language: currentLang }),
-            signal: controller.signal
-        });
-        if (!response.ok) {
-            throw new Error(`Edge TTS server returned ${response.status}`);
-        }
-        await playAudioResponse(response);
-        return true;
-    } finally {
-        clearTimeout(timeoutId);
+function toggleSpeechPlayback() {
+    if (speechRequestController && !currentAudio) {
+        speechRequestController.abort();
+        speechRequestController = null;
+        document.getElementById('main-logo')?.classList.remove('speaking');
+        setSpeechButtonState(false);
+        return;
+    }
+    if (!currentAudio) {
+        speakLast();
+        return;
+    }
+    if (currentAudio.paused) {
+        currentAudio.play();
+        setSpeechButtonState(true);
+    } else {
+        currentAudio.pause();
+        setSpeechButtonState(false);
     }
 }
 
 async function speakLast() {
     if (!lastMessage) return;
-    if (currentAudio) { currentAudio.pause(); currentAudio = null; }
+    if (currentAudio) {
+        currentAudio.pause();
+        currentAudio = null;
+    }
+    speechRequestController?.abort();
+    speechRequestController = new AbortController();
     document.getElementById('main-logo')?.classList.add('speaking');
 
     try {
         if (!ELEVENLABS_KEY) {
             throw new Error('ElevenLabs key is not configured');
         }
-        let response = await requestElevenLabsAudio(availableVoiceId);
-        if (response.status === 404) {
-            const fallbackVoiceId = await findAvailableVoiceId();
-            if (fallbackVoiceId && fallbackVoiceId !== availableVoiceId) {
-                availableVoiceId = fallbackVoiceId;
-                localStorage.setItem('azamat_elevenlabs_voice_id', availableVoiceId);
-                response = await requestElevenLabsAudio(availableVoiceId);
-            }
-        }
+        const response = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${VOICE_ID}`, {
+            method: 'POST',
+            headers: {
+                'Accept': 'audio/mpeg',
+                'Content-Type': 'application/json',
+                'xi-api-key': ELEVENLABS_KEY
+            },
+            body: JSON.stringify({
+                text: prepareSpeechText(lastMessage),
+                model_id: 'eleven_multilingual_v2',
+                voice_settings: {
+                    stability: 0.45,
+                    similarity_boost: 0.8,
+                    style: 0.25,
+                    use_speaker_boost: true,
+                    speed: 1.12
+                }
+            }),
+            signal: speechRequestController.signal
+        });
         if (!response.ok) {
             console.error('ElevenLabs ошибка:', response.status);
             let errorDetails = '';
@@ -980,52 +1019,17 @@ async function speakLast() {
                     ? `ElevenLabs қатесі (${response.status}): ${errorDetails || 'сервис жауап бермеді'}`
                     : `Ошибка ElevenLabs (${response.status}): ${errorDetails || 'сервис не принял запрос'}`);
             }
-            throw new Error(`ElevenLabs returned ${response.status}`);
+            return;
         }
         await playAudioResponse(response);
     } catch (error) {
-        console.warn('ElevenLabs недоступен, пробую Edge TTS:', error);
-        try {
-            await speakWithEdgeTts(lastMessage);
-        } catch (edgeError) {
-            console.error('Ошибка озвучки ElevenLabs и Edge TTS:', edgeError);
-            alert(currentLang === 'kk'
-                ? 'ElevenLabs және қосалқы дауыс сервисіне қосылу мүмкін болмады.'
-                : 'Не удалось подключиться к ElevenLabs и резервному сервису озвучки.');
-        }
-
-        async function requestElevenLabsAudio(voiceId) {
-            return fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
-                method: 'POST',
-                headers: {
-                    'Accept': 'audio/mpeg',
-                    'Content-Type': 'application/json',
-                    'xi-api-key': ELEVENLABS_KEY
-                },
-                body: JSON.stringify({
-                    text: lastMessage,
-                    model_id: 'eleven_multilingual_v2',
-                    voice_settings: { stability: 0.6, similarity_boost: 0.8 }
-                })
-            });
-        }
-
-        async function findAvailableVoiceId() {
-            try {
-                const response = await fetch('https://api.elevenlabs.io/v1/voices', {
-                    headers: { 'Accept': 'application/json', 'xi-api-key': ELEVENLABS_KEY }
-                });
-                if (!response.ok) return '';
-                const data = await response.json();
-                const voices = Array.isArray(data.voices) ? data.voices : [];
-                const preferred = voices.find(voice => /adam|antoni|josh/i.test(voice.name || ''));
-                return (preferred || voices[0])?.voice_id || '';
-            } catch (error) {
-                console.warn('Не удалось получить доступные голоса ElevenLabs:', error);
-                return '';
-            }
-        }
+        if (error.name === 'AbortError') return;
+        console.error('Ошибка озвучки ElevenLabs:', error);
+        alert(currentLang === 'kk'
+            ? 'ElevenLabs сервисіне қосылу мүмкін болмады.'
+            : 'Не удалось подключиться к ElevenLabs.');
     } finally {
+        speechRequestController = null;
         document.getElementById('main-logo')?.classList.remove('speaking');
     }
 }

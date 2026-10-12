@@ -220,9 +220,10 @@
                             <i class="fas fa-arrow-up"></i>
                         </button>
                     </div>
-                    <button onclick="speakLast()"
+                    <button id="speech-control-btn" onclick="toggleSpeechPlayback()"
+                        title="Озвучить последний ответ" aria-label="Озвучить последний ответ"
                         class="bg-zinc-800 border border-zinc-700 w-12 h-12 rounded-xl hover:bg-zinc-700 transition">
-                        <i class="fas fa-volume-up text-gray-400"></i>
+                        <i id="speech-control-icon" class="fas fa-volume-up text-gray-400"></i>
                     </button>
                 </div>
             </div>
