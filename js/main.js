@@ -182,6 +182,28 @@ $$итог$$
     }
 };
 
+const UNIVERSAL_LANGUAGE_SYSTEM_PROMPT = `Сен — Азамат, көптілді сұрақтарды түсінетін Қазақстанның жасанды интеллект көмекшісісің.
+
+ТІЛ ЖӘНЕ ЖАУАП ПІШІМІ (ҚАТАҢ ЕРЕЖЕ):
+1. Пайдаланушының әрбір хабарламасының тілін өзің анықта. Пайдаланушы қазақ, орыс, ағылшын, түрік, араб, қытай, жапон, корей немесе кез келген басқа тілде жазса да, мағынасын дұрыс түсін.
+2. Жауаптың бірінші бөлігі әрқашан толық әрі табиғи қазақ тілінде болсын. Негізгі жауапта пайдаланушының тіліне ауыспа.
+3. Бірінші бөліктен кейін міндетті түрде жаңа жолдан мынадай бөлімді қос: «Аударма (анықталған тіл: [тіл атауы]):». Осы бөлімде бірінші бөліктің толық, дәл аудармасын пайдаланушы сұрақ қойған тілде бер.
+4. Егер сұрақ қазақ тілінде қойылса да, аударма бөлімін қалдырма: анықталған тіл ретінде «қазақ тілі» деп көрсетіп, қазақша жауапты сол бөлімде қайтала.
+5. Пішім дәл мына ретпен болсын:
+**Қазақша жауап:**
+[негізгі жауап]
+
+---
+
+**Аударма (анықталған тіл: [тіл атауы]):**
+[толық аударма]
+6. Аудармада сұрақтың тілін ғана қолдан. Аудармаға түсіндірме, ескерту немесе үшінші тілдегі мәтін қоспа.
+7. Кодты, формуланы, файл атауларын, URL мекенжайларын және командаларды мағынасы бұзылмайтындай етіп сақта. Оларға аударма қажет болса, түсіндірме мәтінді ғана аудар.
+8. Жауапты нақты, сыпайы және пайдалы бер. Пайдаланушының сұрағына жауап бермей, тек аударма жасама.
+9. Пайдаланушы жауапты тек белгілі бір тілде сұраса да, осы екі бөлімді міндетті түрде сақта.
+
+Жауаптың екі бөлімінен тыс ешқандай тілдік түсініктеме қоспа.`;
+
 // ===== AUTH =====
 auth.onAuthStateChanged(async (u) => {
     if (localStorage.getItem('azamat_is_guest') === 'true') {
@@ -506,24 +528,22 @@ async function handleSend() {
         const weatherCities = ['актау', 'актобе', 'алматы', 'астана', 'нурсултан', 'атырау', 'караганды', 'шымкент', 'павлодар', 'семей', 'тараз', 'костанай', 'кызылорда', 'уральск', 'петропавловск'];
         const isWeatherQuery = !currentImg && (lowerText.includes('погод') || lowerText.includes('ауа рай')) &&
             weatherCities.some(city => lowerText.includes(city));
+        let weatherContext = '';
 
         if (isWeatherQuery) {
             const foundCity = weatherCities.find(city => lowerText.includes(city));
-            const weatherData = await getWeather(foundCity);
-            removeThinking(tid);
-            appendMsg('ai', weatherData);
-            s.history.push({ role: 'assistant', content: weatherData });
-            localStorage.setItem('azamat_sessions', JSON.stringify(sessions));
-            isLoading = false;
-            renderSidebar();
-            return;
+            weatherContext = await getWeather(foundCity);
         }
 
         // Multimodal API payload (handles text and inline image base64)
         const contents = [
             {
                 role: 'user',
-                parts: [{ text: langData[currentLang].system }]
+                parts: [{
+                    text: weatherContext
+                        ? `${UNIVERSAL_LANGUAGE_SYSTEM_PROMPT}\n\nНақты ауа райы деректері (осы деректерді қолдан, бірақ жауаптың екі тілдік пішімін сақта):\n${weatherContext}`
+                        : UNIVERSAL_LANGUAGE_SYSTEM_PROMPT
+                }]
             }
         ];
 
