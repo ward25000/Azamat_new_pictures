@@ -26,3 +26,4 @@ Azamat понимает запросы на любом языке. Каждый 
 Перед публичной демонстрацией не публикуйте API-ключи в репозитории и проверьте лимит ключа Google Gemini в Google AI Studio.
 
 https://hackathon-app-bdd9f.web.app/Azamat?v=20261012-7
+http://localhost:3000/%5CAzamat.html
