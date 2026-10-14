@@ -524,15 +524,41 @@ async function handleSend() {
 
     const tid = appendThinking();
     try {
-        const lowerText = text.toLowerCase();
-        const weatherCities = ['актау', 'актобе', 'алматы', 'астана', 'нурсултан', 'атырау', 'караганды', 'шымкент', 'павлодар', 'семей', 'тараз', 'костанай', 'кызылорда', 'уральск', 'петропавловск'];
-        const isWeatherQuery = !currentImg && (lowerText.includes('погод') || lowerText.includes('ауа рай')) &&
-            weatherCities.some(city => lowerText.includes(city));
+       const lowerText = text.toLowerCase();
+        
+        // Список городов с поддержкой кириллицы и латиницы
+        const weatherCities = {
+            'актау': 'актау', 'aktau': 'актау',
+            'актобе': 'актобе', 'aktobe': 'актобе',
+            'алматы': 'алматы', 'almaty': 'алматы',
+            'астана': 'астана', 'astana': 'астана', 'нурсултан': 'астана', 'nur-sultan': 'астана',
+            'атырау': 'атырау', 'atyrau': 'атырау',
+            'караганды': 'караганды', 'karaganda': 'караганды', 'karagandy': 'караганды',
+            'шымкент': 'шымкент', 'shymkent': 'шымкент',
+            'павлодар': 'павлодар', 'pavlodar': 'павлодар',
+            'семей': 'семей', 'semey': 'семей',
+            'тараз': 'тараз', 'taraz': 'тараз',
+            'костанай': 'костанай', 'kostanay': 'костанай',
+            'кызылорда': 'кызылорда', 'kyzylorda': 'кызылорда',
+            'уральск': 'уральск', 'uralsk': 'уральск', 'oral': 'уральск',
+            'петропавловск': 'петропавловск', 'petropavl': 'петропавловск', 'petropavlovsk': 'петропавловск'
+        };
+
+        const cityKeys = Object.keys(weatherCities);
+        const matchedCityKey = cityKeys.find(city => lowerText.includes(city));
+
+        const isWeatherQuery = !currentImg && (
+            lowerText.includes('погод') || 
+            lowerText.includes('ауа рай') || 
+            lowerText.includes('wetter') || 
+            lowerText.includes('temperatur')
+        ) && matchedCityKey !== undefined;
+
         let weatherContext = '';
 
         if (isWeatherQuery) {
-            const foundCity = weatherCities.find(city => lowerText.includes(city));
-            weatherContext = await getWeather(foundCity);
+            const resolvedCity = weatherCities[matchedCityKey];
+            weatherContext = await getWeather(resolvedCity);
         }
 
         // Multimodal API payload (handles text and inline image base64)
